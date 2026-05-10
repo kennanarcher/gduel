@@ -164,9 +164,9 @@ export function canFire(world, shipId) {
   return active < ship.maxMissiles;
 }
 
-export function burnFuel(world, shipId, dtFactor) {
+export function burnFuel(world, shipId, dtFactor, fuelMultiplier = 1) {
   const fuel = world.stores.fuel.get(shipId);
   if (!fuel || fuel.value <= 0) return false;
-  fuel.value = Math.max(0, fuel.value - FUEL_PER_FRAME * dtFactor);
+  fuel.value = Math.max(0, fuel.value - FUEL_PER_FRAME * dtFactor * fuelMultiplier);
   return fuel.value > 0;
 }

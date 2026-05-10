@@ -434,9 +434,9 @@
         </div>
     </div>
     <div class="instructions">
-        Player 1 (Green): W, A, D Keys to move, S to shoot.
+        Player 1 (Green): W, A, D Keys to move, S to shoot, Left Shift for turbo.
         <br>
-        Player 2 (Red): Arrow Keys to move, Down Arrow to shoot.
+        Player 2 (Red): Arrow Keys to move, Down Arrow to shoot, Right Shift for turbo.
         <br>
         Press Y to pause/resume. Press N to quit.
     </div>
@@ -698,6 +698,7 @@
             
             document.addEventListener('keydown', (e) => {
                 const k = e.key.toLowerCase();
+                const c = e.code.toLowerCase();
 
                 if (isGameRunning && !isGamePaused) {
                     if (k === 'y') {
@@ -708,7 +709,11 @@
                     if (!keys[k]) {
                         justPressed.add(k);
                     }
+                    if (!keys[c]) {
+                        justPressed.add(c);
+                    }
                     keys[k] = true;
+                    keys[c] = true;
                 } else if (isGamePaused) {
                     if (k === 'y') {
                         resumeGame();
@@ -719,7 +724,10 @@
                 }
             });
             document.addEventListener('keyup', (e) => {
-                keys[e.key.toLowerCase()] = false;
+                const k = e.key.toLowerCase();
+                const c = e.code.toLowerCase();
+                keys[k] = false;
+                keys[c] = false;
             });
 
             function resetGame() {
