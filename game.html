@@ -347,6 +347,7 @@
                         </div>
                     </div>
 
+                    <div id="extraMenuOptions">
                     <div class="menu-option">
                         <div class="menu-option-label">Border</div>
                         <div class="menu-option-controls">
@@ -401,8 +402,9 @@
                     <div class="menu-option">
                         <div class="menu-option-label">Missiles die with ship</div>
                         <div class="menu-option-controls">
-                            <input id="missilesDieWithShipCheckbox" type="checkbox" aria-label="Missiles die with ship" />
+                            <input id="missilesDieWithShipCheckbox" type="checkbox" aria-label="Missiles die with ship" checked />
                         </div>
+                    </div>
                     </div>
                 </div>
                 <div id="ready-button-container" class="ready-button-container">
@@ -486,7 +488,7 @@
             let maxShots = 3;
             let borderMode = 'outerSpace';
             let objectiveScore = 5;
-            let missilesDieWithShip = false;
+            let missilesDieWithShip = true;
             let mapId = 'classic';
 
             function clamp(n, min, max) {
@@ -649,7 +651,7 @@
             try {
                 const savedMissilesDie = localStorage.getItem('gduel.missilesDieWithShip');
                 if (savedMissilesDie != null) setMissilesDieWithShip(savedMissilesDie !== '0');
-                else setMissilesDieWithShip(false);
+                else setMissilesDieWithShip(true);
             } catch (_) {
                 setMissilesDieWithShip(false);
             }
@@ -802,15 +804,14 @@
                 messageText.textContent = message;
                 messageBox.style.display = 'flex';
                 
-                if (type === 'start') {
+                if (type === 'start' || type === 'win/loss') {
                     readyButtonContainer.style.display = 'flex';
                     pauseButtonContainer.style.display = 'none';
+                    document.getElementById('extraMenuOptions').style.display = '';
                 } else if (type === 'pause') {
                     readyButtonContainer.style.display = 'none';
                     pauseButtonContainer.style.display = 'flex';
-                } else if (type === 'win/loss') {
-                    readyButtonContainer.style.display = 'flex';
-                    pauseButtonContainer.style.display = 'none';
+                    document.getElementById('extraMenuOptions').style.display = 'none';
                 }
             }
             
@@ -823,21 +824,8 @@
                 isPlayer1Bot = false;
                 isPlayer2Bot = false;
 
-                resetGame();
-                stepWorld(
-                    match.world,
-                    { keys: {}, justPressed: new Set() },
-                    {
-                        dtMs: 0,
-                        planetId: match.planetId,
-                        borderMode,
-                        winningScore: objectiveScore,
-                        missilesDieWithShip,
-                    }
-                );
-                updateUi(document, getUiSnapshot(match.world));
-
-                showMessageBox('start', "Welcome to Gravity Duel! Click \"Ready\" to begin.");
+                recreateMatch();
+                showMessageBox('start', "Click \"Ready\" to Begin");
             }
             
             function pauseGame() {

@@ -12,7 +12,7 @@ export const SHIP = {
   width: 10,
   height: 20,
   rotationSpeed: 0.025,
-  thrustPower: 0.002,
+  thrustPower: 0.008,
   maxMissiles: 3,
   initialDistance: 100,
   respawnDelayMs: 3000,
