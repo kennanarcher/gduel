@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Duel</title>
+    <!-- Using a retro-style font -->
+    <style>@font-face { font-family: 'Press Start 2P'; font-style: normal; font-weight: 400; font-display: swap; src: url('./fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }</style>
+    <style>
+        body {
+            /* Dark space theme */
+            background-color: #020826;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        .game-frame {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            border: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .cover {
+            position: relative;
+            width: min(90vw, 900px);
+            aspect-ratio: 16 / 9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+        }
+
+        /* Styles for the Title Image */
+        .title-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            box-shadow: 0 0 10px rgba(171, 73, 227, 0.7), 0 0 30px rgba(171, 73, 227, 0.5);
+            border-radius: 8px;
+            animation: pulseGlow 3s ease-in-out infinite alternate;
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .continue-text {
+            position: absolute;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1rem;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            background-color: rgba(0, 0, 0, 0.55);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            letter-spacing: 0.02em;
+            text-transform: lowercase;
+            animation: continuePulse 1.2s ease-in-out infinite alternate;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .version-text {
+            position: absolute;
+            top: 0.9rem;
+            right: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            background-color: rgba(0, 0, 0, 0.55);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+            font-size: clamp(0.65rem, 1.6vw, 0.85rem);
+            letter-spacing: 0.02em;
+            text-transform: lowercase;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        @keyframes continuePulse {
+            0% { opacity: 0.65; }
+            100% { opacity: 1; }
+        }
+
+        /* Pulsing glow animation for the image container */
+        @keyframes pulseGlow {
+            0% {
+                box-shadow: 0 0 10px rgba(171, 73, 227, 0.7), 0 0 30px rgba(171, 73, 227, 0.5);
+            }
+            100% {
+                box-shadow: 0 0 15px #7904C2, 0 0 45px #AB49E3, 0 0 70px #EECFFF;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cover = document.getElementById('cover');
+
+            const gameFrame = document.getElementById('gameFrame');
+
+            // Background music lives on the menu page so it can persist.
+            // Playback starts from the user's click (autoplay-safe) and
+            // continuously shuffles through the whole soundtrack.
+            const TRACKS = [
+                { name: 'Galactic Standoff', file: './Galactic Standoff.mp3' },
+                { name: 'Submerged Circuits', file: './Submerged_Circuits.mp3' },
+                { name: 'Digital Heartbeat', file: './Digital_Heartbeat.mp3' },
+                { name: 'Nebula Reverie', file: './Nebula_Reverie.mp3' },
+                { name: 'Neon Horizon', file: './Neon_Horizon.mp3' },
+                { name: 'Rhapsody in Beige', file: './Rhapsody_in_Beige.mp3' },
+            ];
+
+            function shuffleArray(arr) {
+                const a = arr.slice();
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            // Shuffle-bag playlist:
+            // - Every track plays once before any track plays a second time
+            //   (and so on for the 3rd, 4th... "round").
+            // - A track never repeats within 2 plays of itself (i.e. at
+            //   least two other tracks play in between).
+            function createShufflePlaylist(count) {
+                let queue = [];
+                let recent = []; // last up to 2 played indices, oldest first
+
+                function refill() {
+                    const bag = shuffleArray([...Array(count).keys()]);
+                    const combined = recent.concat(bag);
+
+                    // Repair any spot where a track would repeat within 2
+                    // plays of itself, by swapping it with a later, safe
+                    // entry from the freshly shuffled bag.
+                    for (let i = recent.length; i < combined.length; i++) {
+                        for (let back = 1; back <= 2 && i - back >= 0; back++) {
+                            if (combined[i] !== combined[i - back]) continue;
+                            for (let k = i + 1; k < combined.length; k++) {
+                                const safe =
+                                    combined[k] !== combined[i] &&
+                                    combined[k] !== combined[i - 1] &&
+                                    combined[k] !== combined[i - 2];
+                                if (safe) {
+                                    [combined[i], combined[k]] = [combined[k], combined[i]];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    queue = combined.slice(recent.length);
+                }
+
+                function next() {
+                    if (queue.length === 0) refill();
+                    const idx = queue.shift();
+                    recent.push(idx);
+                    if (recent.length > 2) recent.shift();
+                    return idx;
+                }
+
+                return { next };
+            }
+
+            const playlist = createShufflePlaylist(TRACKS.length);
+            const music = new Audio();
+            music.preload = 'auto';
+            music.volume = 0.6;
+
+            function playTrack(index) {
+                music.src = TRACKS[index].file;
+                music.play().catch(() => {});
+            }
+
+            // When a track finishes, shuffle in the next one instead of
+            // looping the same file.
+            music.addEventListener('ended', () => {
+                playTrack(playlist.next());
+            });
+
+            let hasStarted = false;
+
+            function startMusic() {
+                playTrack(playlist.next());
+            }
+
+            function continueToGame() {
+                if (hasStarted) return;
+                hasStarted = true;
+
+                startMusic();
+
+                cover.classList.add('hidden');
+                gameFrame.style.display = 'block';
+                gameFrame.src = 'game.html';
+            }
+
+            cover.addEventListener('click', continueToGame);
+            cover.addEventListener('keydown', (e) => {
+                const k = e.key.toLowerCase();
+                if (k === 'enter' || k === ' ') {
+                    e.preventDefault();
+                    continueToGame();
+                }
+            });
+
+            // Make it obvious it's interactive.
+            cover.focus();
+        });
+    </script>
+</head>
+<body>
+    <div id="cover" class="cover" role="button" tabindex="0" aria-label="Click to continue to Gravity Duel">
+        <span class="sr-only">Click to continue</span>
+        <img 
+            src="./Gravity Duel Art v2.png" 
+            alt="Gravity Duel cover art" 
+            class="title-image"
+            onerror="this.onerror=null; this.src='https://placehold.co/900x506/020826/EECFFF?text=Gravity+Duel+Cover'"
+        >
+        <div class="version-text">version 0.9.4.4</div>
+        <div class="continue-text">click to continue</div>
+    </div>
+
+    <iframe id="gameFrame" class="game-frame" title="Gravity Duel"></iframe>
+</body>
+</html>

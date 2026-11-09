@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Duel</title>
+    <style>
+        @font-face { font-family: 'Press Start 2P'; font-style: normal; font-weight: 400; font-display: swap; src: url('./fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }
+
+        :root {
+            --bg-color: #020826;
+            --text-color: #e0e0e0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Press Start 2P', monospace;
+            text-align: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            font-size: clamp(1rem, 3vw, 2.5rem);
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 0 5px #AB49E3, 0 0 10px #EECFFF;
+        }
+
+        #game-ui-wrapper {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #gameContainer {
+            position: relative;
+            border: 5px solid #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1a1c20, #2a2c30);
+            width: clamp(350px, 95vw, 950px);
+            aspect-ratio: 16 / 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+        }
+
+        #messageBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 3px solid #ffffff;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+        
+        #messageText {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #ffffff;
+            text-shadow: 0 0 5px #ffffff;
+            white-space: pre-wrap;
+        }
+
+        #gameOverHeading {
+            display: none;
+            font-size: clamp(1.6rem, 5vw, 2.6rem);
+            color: #ff2d55;
+            text-shadow: 0 0 8px #ff2d55, 0 0 20px #ff2d55, 0 0 40px #ff2d55;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .game-over-score {
+            display: none;
+            justify-content: center;
+            align-items: baseline;
+            gap: 12px;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+        }
+
+        .game-over-score-sep {
+            color: #ffffff;
+        }
+
+        .game-over-button-container {
+            display: none;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 0 5px 0;
+        }
+
+        .menu-option {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .menu-option-label {
+            font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+            color: var(--text-color);
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.35);
+            line-height: 1.4;
+        }
+
+        .menu-option-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-slider {
+            width: min(360px, 75vw);
+        }
+
+        .menu-value {
+            min-width: 5ch;
+            font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+            color: #ffffff;
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.35);
+        }
+
+        .menu-number {
+            width: min(220px, 60vw);
+            padding: 10px 12px;
+            background-color: rgba(0, 0, 0, 0.35);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+            box-sizing: border-box;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            background-color: #ffffff;
+            color: #0d0f12;
+            border: 2px solid #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #ffffff;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .action-button:hover {
+            transform: scale(1.1);
+            background-color: #0d0f12;
+            color: #ffffff;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: clamp(0.7rem, 1.5vw, 1rem);
+            color: var(--text-color);
+            text-align: center;
+            max-width: 80vw;
+        }
+        
+        .player-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .ammo-display {
+            width: 34px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8px 4px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 0 10px rgba(255, 255, 2.5, 0.2);
+            gap: 6px;
+            border-style: solid;
+            border-width: 2px;
+        }
+        #ammo-display-p1 {
+            border-color: #00ff00;
+        }
+        #ammo-display-p2 {
+            border-color: #ff0000;
+        }
+        .missile-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .missile-icon-row {
+            display: flex;
+            flex-direction: row;
+            gap: 3px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .missile-icon {
+            width: 10px;
+            height: 20px;
+            background-color: #e0e0e0;
+            position: relative;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .missile-icon::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #e0e0e0;
+        }
+
+        .missile-icon-sm {
+            width: 6px;
+            height: 12px;
+            background-color: #e0e0e0;
+            position: relative;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+        .missile-icon-sm::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 3px solid transparent;
+            border-right: 3px solid transparent;
+            border-bottom: 3px solid #e0e0e0;
+        }
+
+        .score-display {
+            font-size: clamp(1rem, 2.5vw, 1.8rem);
+            text-shadow: 0 0 5px #ffffff;
+        }
+        #score-p1 {
+            color: #00ff00;
+        }
+        #score-p2 {
+            color: #ff0000;
+        }
+
+        .fuel-display {
+            width: 30px;
+            height: 400px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 2px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+            border: 2px solid;
+        }
+
+        #fuel-display-p1 {
+            border-color: #00ff00;
+        }
+
+        #fuel-display-p2 {
+            border-color: #ff0000;
+        }
+
+        .fuel-line {
+            width: 100%;
+            height: 5px;
+            background-color: #fff;
+            box-shadow: 0 0 5px #fff;
+        }
+        
+        .ready-button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .pause-button-container {
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .player-ready-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 50%;
+        }
+
+        .action-button {
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 150px;
+        }
+
+        .ready-label {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        
+        @media (max-width: 600px) {
+            .instructions {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Gravity Duel</h1>
+    <div id="game-ui-wrapper">
+        <div id="player1-ui" class="player-ui">
+            <span id="score-p1" class="score-display">0</span>
+            <div id="ammo-display-p1" class="ammo-display">
+                <div id="missile-icons-p1" class="missile-icons"></div>
+            </div>
+            <div id="fuel-display-p1" class="fuel-display"></div>
+        </div>
+        <div id="gameContainer">
+            <canvas id="gameCanvas"></canvas>
+            <div id="messageBox">
+                <div id="gameOverHeading">Game Over!</div>
+                <div id="messageText">Welcome!</div>
+                <div id="gameOverScore" class="game-over-score"></div>
+                <div id="menuOptions" class="menu-options">
+                    <div class="menu-option">
+                        <div class="menu-option-label">Game Speed</div>
+                        <div class="menu-option-controls">
+                            <input
+                                id="gameSpeedSlider"
+                                class="menu-slider"
+                                type="range"
+                                min="0.5"
+                                max="4"
+                                step="0.1"
+                                value="1"
+                                aria-label="Game speed"
+                            />
+                            <div id="gameSpeedValue" class="menu-value">1.0x</div>
+                        </div>
+                    </div>
+
+                    <div id="extraMenuOptions">
+                    <div class="menu-option">
+                        <div class="menu-option-label">Border</div>
+                        <div class="menu-option-controls">
+                            <select id="borderModeSelect" class="menu-number" aria-label="Border mode">
+                                <option value="outerSpace">Outer Space</option>
+                                <option value="concrete">Sponge</option>
+                                <option value="rubber">Rubber</option>
+                                <option value="wrap">Wrap</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="menu-option">
+                        <div class="menu-option-label">Map</div>
+                        <div class="menu-option-controls">
+                            <select id="mapSelect" class="menu-number" aria-label="Map">
+                                <option value="classic">Classic</option>
+                                <option value="earth">Moon</option>
+                                <option value="pluto">Pluto</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="menu-option">
+                        <div class="menu-option-label">Max Shots</div>
+                        <div class="menu-option-controls">
+                            <input
+                                id="maxShotsInput"
+                                class="menu-number"
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="9"
+                                value="3"
+                                aria-label="Max shots"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="menu-option">
+                        <div class="menu-option-label">Objective Score</div>
+                        <div class="menu-option-controls">
+                            <input
+                                id="objectiveScoreInput"
+                                class="menu-number"
+                                type="number"
+                                step="1"
+                                min="1"
+                                max="9"
+                                value="5"
+                                aria-label="Objective score"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="menu-option">
+                        <div class="menu-option-label">Missiles Die With Ship</div>
+                        <div class="menu-option-controls">
+                            <input id="missilesDieWithShipCheckbox" type="checkbox" aria-label="Missiles die with ship" checked />
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div id="ready-button-container" class="ready-button-container">
+                    <div class="player-ready-buttons">
+                        <div class="ready-label" style="color: #00ff00;">Player 1</div>
+                        <button id="readyP1Button" class="action-button">Ready Player</button>
+                        <button id="readyBotP1Button" class="action-button">Ready Bot</button>
+                    </div>
+                    <div class="player-ready-buttons">
+                        <div class="ready-label" style="color: #ff0000;">Player 2</div>
+                        <button id="readyP2Button" class="action-button">Ready Player</button>
+                        <button id="readyBotP2Button" class="action-button">Ready Bot</button>
+                    </div>
+                </div>
+                <div id="pause-button-container" class="pause-button-container">
+                    <button id="resumeButton" class="action-button">Resume</button>
+                    <button id="quitButton" class="action-button">Quit</button>
+                </div>
+                <div id="gameOverButtonContainer" class="game-over-button-container">
+                    <button id="continueButton" class="action-button">Continue</button>
+                </div>
+            </div>
+        </div>
+        <div id="player2-ui" class="player-ui">
+            <span id="score-p2" class="score-display">0</span>
+            <div id="ammo-display-p2" class="ammo-display">
+                <div id="missile-icons-p2" class="missile-icons"></div>
+            </div>
+            <div id="fuel-display-p2" class="fuel-display"></div>
+        </div>
+    </div>
+    <div class="instructions">
+        Player 1 (Green): W, A, D Keys to move, S to shoot, Left Shift for turbo.
+        <br>
+        Player 2 (Red): Arrow Keys to move, Down Arrow to shoot, Right Shift for turbo.
+        <br>
+        Press Y to pause/resume. Press N to quit.
+    </div>
+
+    <script src="./bundle.js"></script>
+</body>
+</html>
+

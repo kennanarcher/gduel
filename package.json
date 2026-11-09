@@ -1,0 +1,17 @@
+{
+  "name": "gravity-duel",
+  "productName": "Gravity Duel",
+  "version": "0.9.4",
+  "description": "Gravity Duel - a two-player space duel",
+  "main": "main.js",
+  "author": "Kennan Archer",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.0.0"
+  }
+}
